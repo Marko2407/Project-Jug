@@ -14,10 +14,15 @@ class Category(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(db.Text, nullable=False)
     slug: Mapped[str] = mapped_column(db.Text, nullable=False, unique=True)
-    description: Mapped[str | None]
+    description: Mapped[str | None] = mapped_column(db.Text)
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("category.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
 
     parent: Mapped["Category" | None] = relationship("Category", remote_side=[id])
     posts: Mapped[list["BlogPost"]] = relationship("BlogPost", secondary="post_category", back_populates="categories")
@@ -32,7 +37,9 @@ class PostCategory(db.Model):
 
     post_id: Mapped[int] = mapped_column(ForeignKey("blog_post.id", ondelete="CASCADE"), primary_key=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("category.id", ondelete="CASCADE"), primary_key=True)
-    assigned_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    assigned_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
 
 
 from .blog import BlogPost  # noqa: E402

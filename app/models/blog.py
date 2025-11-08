@@ -21,24 +21,39 @@ class BlogPost(db.Model):
     author_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="RESTRICT"), nullable=False)
     slug: Mapped[str] = mapped_column(db.Text, nullable=False, unique=True)
     title: Mapped[str] = mapped_column(db.Text, nullable=False)
-    summary: Mapped[str | None]
-    status: Mapped[str] = mapped_column(Enum("DRAFT", "SCHEDULED", "PUBLISHED", "HIDDEN", "ARCHIVED", name="post_status"), default="DRAFT", nullable=False)
+    summary: Mapped[str | None] = mapped_column(db.Text)
+    status: Mapped[str] = mapped_column(
+        Enum("DRAFT", "SCHEDULED", "PUBLISHED", "HIDDEN", "ARCHIVED", name="post_status"),
+        default="DRAFT",
+        nullable=False,
+    )
     is_featured: Mapped[bool] = mapped_column(default=False, nullable=False)
     scheduled_for: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     hero_media_id: Mapped[int | None] = mapped_column(ForeignKey("media_asset.id"))
-    meta_title: Mapped[str | None]
-    meta_description: Mapped[str | None]
-    reading_time_minutes: Mapped[int | None]
-    lang: Mapped[str | None] = mapped_column(default="hr")
+    meta_title: Mapped[str | None] = mapped_column(db.Text)
+    meta_description: Mapped[str | None] = mapped_column(db.Text)
+    reading_time_minutes: Mapped[int | None] = mapped_column(db.Integer)
+    lang: Mapped[str | None] = mapped_column(db.String(10), default="hr")
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
 
     author: Mapped["User"] = relationship("User", back_populates="posts")
     hero_media: Mapped["MediaAsset" | None] = relationship("MediaAsset", foreign_keys=[hero_media_id])
-    chapters: Mapped[list["Chapter"]] = relationship("Chapter", order_by="Chapter.position", cascade="all, delete-orphan", back_populates="post")
-    categories: Mapped[list["Category"]] = relationship("Category", secondary="post_category", back_populates="posts")
-    metrics_daily: Mapped[list["PostMetricsDaily"]] = relationship("PostMetricsDaily", cascade="all, delete-orphan", back_populates="post")
+    chapters: Mapped[list["Chapter"]] = relationship(
+        "Chapter", order_by="Chapter.position", cascade="all, delete-orphan", back_populates="post"
+    )
+    categories: Mapped[list["Category"]] = relationship(
+        "Category", secondary="post_category", back_populates="posts"
+    )
+    metrics_daily: Mapped[list["PostMetricsDaily"]] = relationship(
+        "PostMetricsDaily", cascade="all, delete-orphan", back_populates="post"
+    )
     visits: Mapped[list["Visit"]] = relationship("Visit", cascade="all, delete-orphan", back_populates="post")
 
 
@@ -53,15 +68,20 @@ class Chapter(db.Model):
     post_id: Mapped[int] = mapped_column(ForeignKey("blog_post.id", ondelete="CASCADE"), nullable=False)
     position: Mapped[int] = mapped_column(nullable=False)
     type: Mapped[str] = mapped_column(Enum("TEXT", "IMAGE", "VIDEO", name="chapter_type"), nullable=False)
-    text_content: Mapped[str | None]
+    text_content: Mapped[str | None] = mapped_column(db.Text)
     media_id: Mapped[int | None] = mapped_column(ForeignKey("media_asset.id"))
-    external_video_url: Mapped[str | None]
-    caption: Mapped[str | None]
-    alt_text: Mapped[str | None]
+    external_video_url: Mapped[str | None] = mapped_column(db.Text)
+    caption: Mapped[str | None] = mapped_column(db.Text)
+    alt_text: Mapped[str | None] = mapped_column(db.Text)
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
 
-    post: Mapped[BlogPost] = relationship(back_populates="chapters")
+    post: Mapped["BlogPost"] = relationship("BlogPost", back_populates="chapters")
     media: Mapped["MediaAsset" | None] = relationship("MediaAsset", foreign_keys=[media_id])
 
 
@@ -72,12 +92,12 @@ class Visit(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     post_id: Mapped[int] = mapped_column(ForeignKey("blog_post.id", ondelete="CASCADE"), nullable=False)
     visited_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    session_id: Mapped[str | None]
-    ip_hash: Mapped[str | None]
-    user_agent: Mapped[str | None]
-    referrer: Mapped[str | None]
+    session_id: Mapped[str | None] = mapped_column(db.String(255))
+    ip_hash: Mapped[str | None] = mapped_column(db.String(255))
+    user_agent: Mapped[str | None] = mapped_column(db.Text)
+    referrer: Mapped[str | None] = mapped_column(db.Text)
 
-    post: Mapped[BlogPost] = relationship(back_populates="visits")
+    post: Mapped["BlogPost"] = relationship("BlogPost", back_populates="visits")
 
 
 class PostMetricsDaily(db.Model):
@@ -90,7 +110,7 @@ class PostMetricsDaily(db.Model):
     likes: Mapped[int] = mapped_column(default=0, nullable=False)
     shares: Mapped[int] = mapped_column(default=0, nullable=False)
 
-    post: Mapped[BlogPost] = relationship(back_populates="metrics_daily")
+    post: Mapped["BlogPost"] = relationship("BlogPost", back_populates="metrics_daily")
 
 
 from .media import MediaAsset  # noqa: E402

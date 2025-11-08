@@ -16,11 +16,20 @@ class User(db.Model):
     password_hash: Mapped[str] = mapped_column(db.Text, nullable=False)
     display_name: Mapped[str] = mapped_column(db.Text, nullable=False)
     role: Mapped[str] = mapped_column(Enum("ADMIN", name="user_role"), default="ADMIN", nullable=False)
-    status: Mapped[str] = mapped_column(Enum("ACTIVE", "DISABLED", name="user_status"), default="ACTIVE", nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("ACTIVE", "DISABLED", name="user_status"), default="ACTIVE", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
 
-    profile: Mapped["Profile"] = relationship(back_populates="user", uselist=False, cascade="all, delete")
+    profile: Mapped["Profile" | None] = relationship(
+        "Profile", back_populates="user", uselist=False, cascade="all, delete"
+    )
     posts: Mapped[list["BlogPost"]] = relationship("BlogPost", back_populates="author")
 
 
@@ -28,19 +37,24 @@ class Profile(db.Model):
     __tablename__ = "profile"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
-    title: Mapped[str | None]
-    bio: Mapped[str | None]
+    title: Mapped[str | None] = mapped_column(db.Text)
+    bio: Mapped[str | None] = mapped_column(db.Text)
     avatar_media_id: Mapped[int | None] = mapped_column(ForeignKey("media_asset.id"))
-    website_url: Mapped[str | None]
-    instagram: Mapped[str | None]
-    facebook: Mapped[str | None]
-    youtube: Mapped[str | None]
-    phone: Mapped[str | None]
-    location: Mapped[str | None]
+    website_url: Mapped[str | None] = mapped_column(db.Text)
+    instagram: Mapped[str | None] = mapped_column(db.Text)
+    facebook: Mapped[str | None] = mapped_column(db.Text)
+    youtube: Mapped[str | None] = mapped_column(db.Text)
+    phone: Mapped[str | None] = mapped_column(db.Text)
+    location: Mapped[str | None] = mapped_column(db.Text)
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
 
-    user: Mapped[User] = relationship(back_populates="profile")
+    user: Mapped["User"] = relationship("User", back_populates="profile")
     avatar: Mapped["MediaAsset" | None] = relationship("MediaAsset", foreign_keys=[avatar_media_id])
 
 
