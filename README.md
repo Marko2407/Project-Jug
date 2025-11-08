@@ -32,6 +32,13 @@ Flask backend for a health & nutrition blog with support for Google Drive media 
 
 4. Provide Google Drive credentials: download a service account JSON file and point `GOOGLE_DRIVE_SERVICE_ACCOUNT` to it. Optionally specify `GOOGLE_DRIVE_UPLOAD_FOLDER_ID` for uploads.
 
+START service"
+brew services start postgresql@16
+
+STOP service:
+brew services stop postgresql@16
+
+
 5. Run the development server.
 
    ```bash
