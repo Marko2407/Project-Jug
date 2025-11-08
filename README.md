@@ -112,7 +112,7 @@ curl -X POST http://localhost:5000/api/admin/posts \
 
 ## Next steps
 
-- Implement authentication for multiple admin users.
+- Implementåç authentication for multiple admin users.
 - Add background scheduler to automatically publish scheduled posts.
 - Expand metrics tracking for likes and shares.
 - Integrate with front-end for rendering dynamic chapters.
