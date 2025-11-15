@@ -1,0 +1,177 @@
+### Environment
+@baseUrl = http://localhost:5000
+@adminToken = REPLACE_WITH_ADMIN_JWT
+
+### Public API --------------------------------------------------------------
+
+### List all published posts
+GET {{baseUrl}}/api/posts
+Accept: application/json
+
+### Filter posts by category slug and free-text search
+GET {{baseUrl}}/api/posts?category=wellness&search=prehrana
+Accept: application/json
+
+### Filter posts by publication date window
+GET {{baseUrl}}/api/posts?published_after=2024-01-01T00:00:00&published_before=2024-12-31T23:59:59
+Accept: application/json
+
+### Retrieve a single published post by slug
+GET {{baseUrl}}/api/posts/prvi-post
+Accept: application/json
+X-Session-ID: demo-session-123
+User-Agent: HTTPie/3.2.1
+
+### Featured posts (limited by POST_FEATURED_LIMIT)
+GET {{baseUrl}}/api/posts/featured
+Accept: application/json
+
+### Recently published posts (limited by POST_RECENT_LIMIT)
+GET {{baseUrl}}/api/posts/recent
+Accept: application/json
+
+### Most popular posts ranked by total views
+GET {{baseUrl}}/api/posts/popular
+Accept: application/json
+
+### List all categories
+GET {{baseUrl}}/api/categories
+Accept: application/json
+
+
+### Admin API (requires Authorization: Bearer token) -----------------------
+
+### Register a new admin user and receive JWT token
+POST {{baseUrl}}/api/admin/auth/register
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "SuperSecret123",
+  "display_name": "Glavni Admin"
+}
+
+### Login with admin credentials to obtain JWT token
+POST {{baseUrl}}/api/admin/auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "SuperSecret123"
+}
+
+### List all posts (any status)
+GET {{baseUrl}}/api/admin/posts
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+### Create a new post with chapters and categories
+POST {{baseUrl}}/api/admin/posts
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "slug": "prvi-post",
+  "title": "Prvi blog post",
+  "summary": "Uvod u zdravu prehranu",
+  "status": "PUBLISHED",
+  "published_at": "2024-03-01T09:00:00",
+  "category_ids": [1, 2],
+  "chapters": [
+    {
+      "title": "Uvod",
+      "type": "TEXT",
+      "position": 0,
+      "text_content": "Sadržaj uvodnog poglavlja."
+    },
+    {
+      "title": "Video vodič",
+      "type": "VIDEO",
+      "position": 1,
+      "media_id": 5,
+      "text_content": null
+    }
+  ]
+}
+
+### Update an existing post (replace chapters & categories)
+PUT {{baseUrl}}/api/admin/posts/1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Ažurirani naslov",
+  "status": "SCHEDULED",
+  "scheduled_for": "2024-04-10T08:30:00",
+  "category_ids": [3],
+  "chapters": [
+    {
+      "title": "Novo prvo poglavlje",
+      "type": "TEXT",
+      "position": 0,
+      "text_content": "Ažurirani sadržaj."
+    }
+  ]
+}
+
+### Delete a post by numeric identifier
+DELETE {{baseUrl}}/api/admin/posts/1
+Authorization: Bearer {{adminToken}}
+
+### Create a category
+POST {{baseUrl}}/api/admin/categories
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Prehrana",
+  "slug": "prehrana",
+  "description": "Savjeti o zdravoj prehrani"
+}
+
+### Update a category
+PUT {{baseUrl}}/api/admin/categories/1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Fitness",
+  "slug": "fitness"
+}
+
+### Delete a category
+DELETE {{baseUrl}}/api/admin/categories/1
+Authorization: Bearer {{adminToken}}
+
+### List categories (admin view)
+GET {{baseUrl}}/api/admin/categories
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+### Upload a media file (multipart form-data)
+POST {{baseUrl}}/api/admin/media
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="cover.jpg"
+Content-Type: image/jpeg
+
+< ./sample-data/cover.jpg
+--WebAppBoundary
+Content-Disposition: form-data; name="kind"
+
+IMAGE
+--WebAppBoundary
+Content-Disposition: form-data; name="uploader_id"
+
+1
+--WebAppBoundary--
+

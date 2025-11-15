@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from flask import Blueprint, current_app, g, jsonify, request
 from jwt import InvalidTokenError
 from sqlalchemy import select
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
 from app.models import BlogPost, Category, Chapter, MediaAsset, User
@@ -56,7 +57,103 @@ def require_admin_jwt() -> dict:
 
 @admin_bp.before_request
 def _authenticate_admin() -> None:
+    if request.endpoint in {
+        "admin.register_admin",
+        "admin.login_admin",
+    }:
+        return
+
     g.admin_claims = require_admin_jwt()
+
+
+@admin_bp.post("/auth/register")
+def register_admin():
+    payload = request.get_json() or {}
+
+    email = (payload.get("email") or "").strip().lower()
+    password = payload.get("password") or ""
+    display_name = (payload.get("display_name") or "").strip()
+
+    if not email or not password or not display_name:
+        return (
+            jsonify({"message": "email, password and display_name are required"}),
+            400,
+        )
+
+    existing = db.session.scalar(select(User).where(User.email == email))
+    if existing:
+        return jsonify({"message": "User with this email already exists"}), 409
+
+    password_hash = generate_password_hash(password)
+    user = User(email=email, password_hash=password_hash, display_name=display_name)
+    db.session.add(user)
+    db.session.flush()
+
+    try:
+        token = _generate_admin_jwt(user)
+    except RuntimeError:
+        db.session.rollback()
+        return (
+            jsonify({"message": "Admin authentication is not configured"}),
+            500,
+        )
+
+    db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "token": token,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "display_name": user.display_name,
+                    "role": user.role,
+                    "status": user.status,
+                },
+            }
+        ),
+        201,
+    )
+
+
+@admin_bp.post("/auth/login")
+def login_admin():
+    payload = request.get_json() or {}
+
+    email = (payload.get("email") or "").strip().lower()
+    password = payload.get("password") or ""
+
+    if not email or not password:
+        return jsonify({"message": "email and password are required"}), 400
+
+    user = db.session.scalar(select(User).where(User.email == email))
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"message": "Invalid credentials"}), 401
+
+    if user.status != "ACTIVE":
+        return jsonify({"message": "User is not active"}), 403
+
+    try:
+        token = _generate_admin_jwt(user)
+    except RuntimeError:
+        return jsonify({"message": "Admin authentication is not configured"}), 500
+
+    return (
+        jsonify(
+            {
+                "token": token,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "display_name": user.display_name,
+                    "role": user.role,
+                    "status": user.status,
+                },
+            }
+        ),
+        200,
+    )
 
 
 @admin_bp.post("/posts")
@@ -259,3 +356,28 @@ def _build_chapter(chapter_data: dict, fallback_position: int) -> Chapter:
     chapter = Chapter(**data)
     chapter.position = position
     return chapter
+
+
+def _generate_admin_jwt(user: User) -> str:
+    secret = current_app.config.get("ADMIN_JWT_SECRET")
+    if not secret:
+        current_app.logger.error("ADMIN_JWT_SECRET is not configured")
+        raise RuntimeError("ADMIN_JWT_SECRET is not configured")
+
+    algorithm = current_app.config.get("ADMIN_JWT_ALGORITHM", "HS256")
+    expires_in = current_app.config.get("ADMIN_JWT_EXPIRES_IN", 3600)
+    try:
+        expires_in = int(expires_in)
+    except (TypeError, ValueError):
+        expires_in = 3600
+
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(user.id),
+        "email": user.email,
+        "role": "admin",
+        "iat": now,
+        "exp": now + timedelta(seconds=expires_in),
+    }
+
+    return jwt.encode(payload, secret, algorithm=algorithm)
