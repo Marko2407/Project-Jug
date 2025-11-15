@@ -18,6 +18,7 @@ class ChapterSchema(SQLAlchemySchema):
     post_id = auto_field(dump_only=True)
     position = auto_field()
     type = auto_field(validate=validate.OneOf(["TEXT", "IMAGE", "VIDEO"]))
+    title = auto_field(load_default=None)
     text_content = auto_field(load_default=None)
     media_id = auto_field(load_default=None)
     external_video_url = auto_field(load_default=None)

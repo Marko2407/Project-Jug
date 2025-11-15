@@ -5,6 +5,8 @@ from typing import Any
 
 from flask import Flask
 from dotenv import load_dotenv
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from .extensions import db, migrate
 from .routes import register_blueprints
@@ -42,6 +44,8 @@ def create_app(config: dict[str, Any] | None = None) -> Flask:
     configure_logging(app)
 
     with app.app_context():
+        _ensure_chapter_title_column(app)
+
         # Ensure storage backend is initialized early to fail fast on misconfiguration.
         try:
             get_storage_backend(app.config)
@@ -66,3 +70,12 @@ def configure_logging(app: Flask) -> None:
 
 
 __all__ = ["create_app"]
+
+
+def _ensure_chapter_title_column(app: Flask) -> None:
+    try:
+        db.session.execute(text("ALTER TABLE IF EXISTS chapter ADD COLUMN IF NOT EXISTS title TEXT"))
+        db.session.commit()
+    except SQLAlchemyError as exc:
+        app.logger.warning("Failed to ensure chapter.title column exists: %s", exc)
+        db.session.rollback()
