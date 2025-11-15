@@ -53,6 +53,7 @@ class Chapter(db.Model):
     post_id = db.Column(db.Integer, ForeignKey("blog_post.id", ondelete="CASCADE"), nullable=False)
     position = db.Column(db.Integer, nullable=False)
     type = db.Column(Enum("TEXT", "IMAGE", "VIDEO", name="chapter_type"), nullable=False)
+    title = db.Column(db.Text)
     text_content = db.Column(db.Text)
     media_id = db.Column(db.Integer, ForeignKey("media_asset.id"))
     external_video_url = db.Column(db.Text)

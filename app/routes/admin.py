@@ -169,7 +169,10 @@ def create_post():
     for idx, chapter_data in enumerate(chapters_payload):
         if not isinstance(chapter_data, dict):
             return jsonify({"message": "chapters must contain objects"}), 400
-        post.chapters.append(_build_chapter(chapter_data, idx))
+        try:
+            post.chapters.append(_build_chapter(chapter_data, idx))
+        except ValueError as exc:
+            return jsonify({"message": str(exc)}), 400
 
     category_ids = payload.get("category_ids", [])
     if category_ids and not isinstance(category_ids, list):
@@ -205,7 +208,10 @@ def update_post(post_id: int):
         for idx, chapter_data in enumerate(chapters_payload):
             if not isinstance(chapter_data, dict):
                 return jsonify({"message": "chapters must contain objects"}), 400
-            post.chapters.append(_build_chapter(chapter_data, idx))
+            try:
+                post.chapters.append(_build_chapter(chapter_data, idx))
+            except ValueError as exc:
+                return jsonify({"message": str(exc)}), 400
 
     if "category_ids" in payload:
         category_ids = payload["category_ids"]
@@ -353,6 +359,11 @@ def _build_chapter(chapter_data: dict, fallback_position: int) -> Chapter:
     data = dict(chapter_data)
     data.pop("id", None)
     position = data.pop("position", fallback_position)
+    media_id = data.get("media_id")
+    if media_id is not None:
+        media = db.session.get(MediaAsset, media_id)
+        if not media:
+            raise ValueError(f"media_id {media_id} does not exist")
     chapter = Chapter(**data)
     chapter.position = position
     return chapter
